@@ -1,0 +1,34 @@
+# ── Secrets & credentials — NEVER commit these
+.env
+gen-lang-client*.json
+*service_account*.json
+*credentials*.json
+
+# ── Keepa cache & local data
+keepa_cache.json
+keepa_export_lookup.json
+
+# ── Output / data files
+results.csv
+*.xlsx
+*.xls
+~$*
+
+# ── Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# ── Streamlit secrets (local only)
+.streamlit/secrets.toml
+
+# ── Claude Code internal
+.claude/settings.local.json
+
+# ── OS
+.DS_Store
+Thumbs.db
+desktop.ini
