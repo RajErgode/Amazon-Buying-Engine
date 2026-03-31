@@ -2,11 +2,11 @@
 VirVentures Returnability Engine — Dashboard (main page).
 """
 
-import plotly.express as px
-import plotly.graph_objects as go
+import altair as alt
 import streamlit as st
 
 from src.ui_utils import apply_theme, page_header, kpi_card, render_sidebar, ORANGE, NAVY, GREEN, RED, AMBER
+import pandas as pd
 from src.storage import load_results_db, get_stats
 
 st.set_page_config(
@@ -94,56 +94,49 @@ with left:
                 unsafe_allow_html=True)
     pie_df = df["Status"].value_counts().reset_index()
     pie_df.columns = ["Status", "Count"]
-    color_map = {"Non-Returnable": RED, "Returnable": GREEN, "Unknown": AMBER}
-    fig = px.pie(
-        pie_df, values="Count", names="Status",
-        color="Status", color_discrete_map=color_map,
-        hole=0.55,
+    donut = (
+        alt.Chart(pie_df)
+        .mark_arc(innerRadius=70, outerRadius=120)
+        .encode(
+            theta=alt.Theta("Count:Q"),
+            color=alt.Color(
+                "Status:N",
+                scale=alt.Scale(
+                    domain=["Non-Returnable", "Returnable", "Unknown"],
+                    range=[RED, GREEN, AMBER],
+                ),
+                legend=alt.Legend(orient="bottom"),
+            ),
+            tooltip=["Status:N", "Count:Q"],
+        )
+        .properties(height=300)
     )
-    fig.update_traces(textposition="outside", textinfo="percent+label",
-                      textfont_size=13)
-    fig.update_layout(
-        showlegend=False, margin=dict(t=10, b=10, l=10, r=10),
-        height=300, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=NAVY),
-        annotations=[dict(text=f"<b>{s['total']}</b><br>products",
-                          x=0.5, y=0.5, font_size=14, showarrow=False,
-                          font_color=NAVY)]
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    st.altair_chart(donut, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-    st.markdown('<div class="section-card"><div class="section-title">Confidence Distribution</div>',
+    st.markdown('<div class="section-card"><div class="section-title">Confidence by Status</div>',
                 unsafe_allow_html=True)
-
-    conf_order = ["High", "Medium", "Low"]
     conf_counts = df.groupby(["Status", "Confidence"]).size().reset_index(name="Count")
-    fig2 = go.Figure()
-    conf_colors = {"High": GREEN, "Medium": AMBER, "Low": RED}
-    for conf in conf_order:
-        subset = conf_counts[conf_counts["Confidence"] == conf]
-        status_vals = subset.set_index("Status")["Count"].reindex(
-            ["Non-Returnable", "Returnable", "Unknown"], fill_value=0
+    conf_chart = (
+        alt.Chart(conf_counts)
+        .mark_bar()
+        .encode(
+            x=alt.X("Status:N", title=""),
+            y=alt.Y("Count:Q", title="Products"),
+            color=alt.Color(
+                "Confidence:N",
+                scale=alt.Scale(
+                    domain=["High", "Medium", "Low"],
+                    range=[GREEN, AMBER, RED],
+                ),
+                legend=alt.Legend(orient="bottom"),
+            ),
+            tooltip=["Status:N", "Confidence:N", "Count:Q"],
         )
-        fig2.add_trace(go.Bar(
-            name=conf,
-            x=status_vals.index.tolist(),
-            y=status_vals.values.tolist(),
-            marker_color=conf_colors[conf],
-        ))
-    fig2.update_layout(
-        barmode="stack",
-        legend_title_text="Confidence",
-        height=300,
-        margin=dict(t=10, b=10, l=10, r=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=NAVY),
-        xaxis=dict(gridcolor="#F3F4F6"),
-        yaxis=dict(gridcolor="#F3F4F6"),
+        .properties(height=300)
     )
-    st.plotly_chart(fig2, use_container_width=True)
+    st.altair_chart(conf_chart, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ── Rule Type Breakdown ───────────────────────────────────────────────────────
@@ -154,24 +147,17 @@ st.markdown('<div class="section-title">Classification Source Breakdown</div>',
 if "Classified By" in df.columns:
     by_source = df["Classified By"].value_counts().reset_index()
     by_source.columns = ["Source", "Count"]
-    fig3 = px.bar(
-        by_source, x="Count", y="Source", orientation="h",
-        color_discrete_sequence=[ORANGE],
-        text="Count",
+    source_chart = (
+        alt.Chart(by_source)
+        .mark_bar(color=ORANGE)
+        .encode(
+            x=alt.X("Count:Q", title="Items classified"),
+            y=alt.Y("Source:N", sort="-x", title=""),
+            tooltip=["Source:N", "Count:Q"],
+        )
+        .properties(height=max(120, len(by_source) * 45))
     )
-    fig3.update_traces(textposition="outside")
-    fig3.update_layout(
-        height=max(120, len(by_source) * 45),
-        margin=dict(t=0, b=0, l=0, r=40),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=NAVY),
-        xaxis=dict(gridcolor="#F3F4F6"),
-        showlegend=False,
-        yaxis_title="",
-        xaxis_title="Items classified",
-    )
-    st.plotly_chart(fig3, use_container_width=True)
+    st.altair_chart(source_chart, use_container_width=True)
 else:
     st.info("Source tracking will appear after next upload.")
 
