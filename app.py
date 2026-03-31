@@ -25,6 +25,35 @@ page_header(
     "Real-time overview of your product returnability intelligence",
 )
 
+# ── Credentials check — fail fast, never hang ─────────────────────────────────
+from src.credentials import has_credentials
+if not has_credentials():
+    st.error("### Google Sheets not connected")
+    st.markdown("""
+To connect your Google Sheet, add the following secrets in Streamlit Cloud:
+
+**Manage app → Settings → Secrets** — paste this block and fill in your values:
+
+```toml
+GOOGLE_SHEET_ID = "your-sheet-id-here"
+
+[google_service_account]
+type = "service_account"
+project_id = "your-project-id"
+private_key_id = "..."
+private_key = "-----BEGIN RSA PRIVATE KEY-----\\n...\\n-----END RSA PRIVATE KEY-----\\n"
+client_email = "your-service-account@project.iam.gserviceaccount.com"
+client_id = "..."
+auth_uri = "https://accounts.google.com/o/oauth2/auth"
+token_uri = "https://oauth2.googleapis.com/token"
+auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+client_x509_cert_url = "..."
+```
+
+After saving secrets, click **Reboot app**.
+    """)
+    st.stop()
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 with st.spinner("Loading database…"):
     df   = load_results_db()

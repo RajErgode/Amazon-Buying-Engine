@@ -48,7 +48,11 @@ def load_results_db() -> pd.DataFrame:
     """
     Load all results from Google Sheets.
     Cached for 5 minutes so repeated page navigations don't hit the API.
+    Returns empty DataFrame immediately if credentials are not configured.
     """
+    from src.credentials import has_credentials
+    if not has_credentials():
+        return pd.DataFrame(columns=RESULT_COLUMNS)
     try:
         ws = _get_results_ws()
         records = ws.get_all_records()

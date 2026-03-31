@@ -22,6 +22,23 @@ SCOPES = [
 ]
 
 
+def has_credentials() -> bool:
+    """
+    Fast check — no network calls.
+    Returns True if Google credentials are available (Streamlit secrets or .env).
+    """
+    try:
+        import streamlit as st
+        secrets = st.secrets
+        if secrets.get("google_service_account") and secrets.get("GOOGLE_SHEET_ID"):
+            return True
+    except Exception:
+        pass
+    return bool(
+        os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON") and os.getenv("GOOGLE_SHEET_ID")
+    )
+
+
 def _get_client() -> gspread.Client:
     """Return an authorised gspread client from st.secrets or .env."""
     try:

@@ -184,21 +184,28 @@ def render_sidebar(active_page: str = ""):
         )
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        # Live stats
+        # Live stats — only if credentials are configured
         try:
-            from src.storage import load_results_db, get_stats
-            df   = load_results_db()
-            s    = get_stats(df)
-            unknown_count = s["unknown"]
-            total = s["total"]
-            st.markdown(
-                f"<p style='margin:2px 0'>📦 <b>{total}</b> products in database</p>"
-                f"<p style='margin:2px 0'>🟠 <b>{s['non_returnable']}</b> Non-Returnable</p>"
-                f"<p style='margin:2px 0'>🟢 <b>{s['returnable']}</b> Returnable</p>"
-                + (f"<p style='margin:2px 0'>🔴 <b>{unknown_count}</b> need review</p>"
-                   if unknown_count else ""),
-                unsafe_allow_html=True,
-            )
+            from src.credentials import has_credentials
+            if has_credentials():
+                from src.storage import load_results_db, get_stats
+                df   = load_results_db()
+                s    = get_stats(df)
+                unknown_count = s["unknown"]
+                total = s["total"]
+                st.markdown(
+                    f"<p style='margin:2px 0'>📦 <b>{total}</b> products in database</p>"
+                    f"<p style='margin:2px 0'>🟠 <b>{s['non_returnable']}</b> Non-Returnable</p>"
+                    f"<p style='margin:2px 0'>🟢 <b>{s['returnable']}</b> Returnable</p>"
+                    + (f"<p style='margin:2px 0'>🔴 <b>{unknown_count}</b> need review</p>"
+                       if unknown_count else ""),
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    "<p style='opacity:0.6;font-size:0.8rem'>Configure secrets to connect</p>",
+                    unsafe_allow_html=True,
+                )
         except Exception:
             pass
 
