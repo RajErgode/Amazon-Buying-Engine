@@ -137,16 +137,32 @@ def trunc(text, n=55):
     return (t[:n] + "…") if len(t) > n else t
 
 # ── HTML Table ────────────────────────────────────────────────────────────────
+ROW_BG = {
+    "Non-Returnable": ("#FEF2F2", "#FECACA"),   # light red, alt light red
+    "Returnable":     ("#F0FDF4", "#DCFCE7"),   # light green, alt light green
+    "Unknown":        ("#FFFBEB", "#FEF3C7"),   # light amber, alt light amber
+}
+
 rows_html = ""
 for i, (_, row) in enumerate(page_df.iterrows()):
-    bg = "#FFFFFF" if i % 2 == 0 else "#F8FAFC"
-    td = f'style="padding:10px 14px;border-bottom:1px solid #E5E7EB;background:{bg};vertical-align:middle;"'
-    td_mono = f'style="padding:10px 14px;border-bottom:1px solid #E5E7EB;background:{bg};vertical-align:middle;font-family:monospace;font-size:0.85rem;color:{NAVY};font-weight:600;"'
-    td_sm   = f'style="padding:10px 14px;border-bottom:1px solid #E5E7EB;background:{bg};vertical-align:middle;font-size:0.8rem;color:#6B7280;"'
+    status = row.get('Status', '')
+    bgs = ROW_BG.get(status, ("#FFFFFF", "#F8FAFC"))
+    bg = bgs[0] if i % 2 == 0 else bgs[1]
+
+    border = "border-bottom:1px solid rgba(0,0,0,0.06)"
+    td      = f'style="padding:10px 14px;{border};background:{bg};vertical-align:middle;"'
+    td_mono = f'style="padding:10px 14px;{border};background:{bg};vertical-align:middle;font-family:monospace;font-size:0.85rem;color:{NAVY};font-weight:600;"'
+    td_sm   = f'style="padding:10px 14px;{border};background:{bg};vertical-align:middle;font-size:0.8rem;color:#374151;"'
+
+    asin = row.get('ASIN', '')
+    asin_link = (f'<a href="https://www.amazon.com/gp/product/{asin}" target="_blank" '
+                 f'style="color:{NAVY};text-decoration:none;font-family:monospace;font-weight:700;'
+                 f'font-size:0.85rem;border-bottom:1px dotted {ORANGE};" '
+                 f'title="Open on Amazon">{asin} ↗</a>')
 
     rows_html += f"""
     <tr>
-        <td {td_mono}>{row.get('ASIN','')}</td>
+        <td {td_mono}>{asin_link}</td>
         <td {td}><span title="{row.get('Title','')}" style="font-size:0.84rem;color:#111827">{trunc(row.get('Title',''), 52)}</span></td>
         <td {td}><span style="font-size:0.83rem;color:#374151;font-weight:500">{trunc(row.get('Brand',''), 18)}</span></td>
         <td {td_sm}>{trunc(row.get('Category',''), 28)}</td>
