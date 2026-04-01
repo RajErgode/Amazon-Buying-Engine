@@ -1,10 +1,9 @@
-# VirVentures Returnability Engine — dependencies
-python-dotenv==1.0.1
-pandas==2.2.2
-requests==2.32.3
-gspread==6.1.2
-google-auth==2.30.0
-google-auth-oauthlib==1.2.0
-openpyxl==3.1.4
+# VirVentures Returnability Engine
+# Only list packages not already bundled by Streamlit or gspread.
+# pandas, requests, altair, numpy, etc. are Streamlit dependencies — omit them.
+python-dotenv>=1.0.1
+gspread>=6.0
+google-auth>=2.0
+google-auth-oauthlib>=1.0
+openpyxl>=3.1
 streamlit>=1.35.0
-altair>=5.0.0
