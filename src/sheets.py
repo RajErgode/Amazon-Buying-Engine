@@ -79,8 +79,9 @@ def read_sheet() -> pd.DataFrame:
 
 
 def get_unclassified(df: pd.DataFrame) -> pd.DataFrame:
-    """Return only ASINs that have not been classified yet."""
-    mask = df[STATUS_COL].isna() | (df[STATUS_COL].astype(str).str.strip() == "")
+    """Return ASINs that are unclassified or previously marked Unknown (to retry with updated rules)."""
+    status = df[STATUS_COL].astype(str).str.strip()
+    mask = df[STATUS_COL].isna() | (status == "") | (status == "Unknown")
     return df[mask].copy()
 
 
