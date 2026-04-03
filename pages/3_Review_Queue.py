@@ -18,6 +18,9 @@ st.set_page_config(
 )
 
 apply_theme()
+from src.auth import require_login, render_logout
+require_login()
+render_logout()
 render_sidebar("review")
 page_header("🤖 Review Queue",
             "AI analysis for products that couldn't be classified by rules alone")

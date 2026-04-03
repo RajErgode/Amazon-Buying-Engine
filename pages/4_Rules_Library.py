@@ -33,6 +33,9 @@ st.set_page_config(
 )
 
 apply_theme()
+from src.auth import require_login, render_logout
+require_login()
+render_logout()
 render_sidebar("rules")
 page_header("📋 Rules Library",
             "Manage classification rules — no code changes needed")
