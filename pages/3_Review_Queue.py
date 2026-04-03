@@ -18,8 +18,9 @@ st.set_page_config(
 )
 
 apply_theme()
-from src.auth import require_login, render_logout
-require_login()
+from src.auth import check_auth, render_logout
+if not check_auth():
+    st.stop()
 render_logout()
 render_sidebar("review")
 page_header("🤖 Review Queue",

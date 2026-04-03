@@ -3,6 +3,12 @@ src/auth.py
 -----------
 Login gate for the VirVentures Returnability Engine.
 Credentials are read from Streamlit secrets (never hardcoded).
+
+Usage in every page (top of file, after set_page_config + apply_theme):
+    from src.auth import check_auth, render_logout
+    if not check_auth():
+        st.stop()
+    render_logout()
 """
 
 import streamlit as st
@@ -11,150 +17,108 @@ ORANGE = "#F47920"
 NAVY   = "#1B3A5C"
 
 
-def _get_credentials() -> tuple[str, str]:
+def _get_credentials():
     """Read username and password from Streamlit secrets."""
     try:
         username = st.secrets["auth"]["username"]
         password = st.secrets["auth"]["password"]
-        return username, password
+        return str(username).strip(), str(password).strip()
     except Exception:
         return None, None
 
 
-def require_login():
+def check_auth() -> bool:
     """
-    Call at the top of every page.
-    If the user is not authenticated, show the login screen and stop execution.
-    Authenticated state persists across page navigation via st.session_state.
+    Show login screen if not authenticated.
+    Returns True if the user is logged in, False if the login screen was shown.
+    Caller must call st.stop() when this returns False.
     """
     if st.session_state.get("authenticated"):
-        return   # already logged in — let the page render
+        return True
 
     valid_user, valid_pass = _get_credentials()
 
-    # ── Page config already set by caller — just render login UI ─────────────
-    st.markdown(f"""
+    # ── Hide sidebar on login page ────────────────────────────────────────────
+    st.markdown("""
     <style>
-    /* Hide Streamlit sidebar and top bar on login page */
-    [data-testid="stSidebar"]        {{ display: none !important; }}
-    [data-testid="stHeader"]         {{ background: transparent; }}
-    #MainMenu, footer, header        {{ visibility: hidden; }}
-
-    .login-wrapper {{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 80vh;
-    }}
-    .login-card {{
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 48px 56px;
-        width: 420px;
-        box-shadow: 0 8px 40px rgba(27,58,92,0.13);
-        border-top: 5px solid {ORANGE};
-    }}
-    .login-logo {{
-        text-align: center;
-        margin-bottom: 8px;
-    }}
-    .login-logo .brand {{
-        font-size: 1.7rem;
-        font-weight: 800;
-        color: {NAVY};
-        letter-spacing: -0.5px;
-    }}
-    .login-logo .brand span {{
-        color: {ORANGE};
-    }}
-    .login-subtitle {{
-        text-align: center;
-        color: #6B7280;
-        font-size: 0.88rem;
-        margin-bottom: 32px;
-    }}
-    .login-error {{
-        background: #FEF2F2;
-        border: 1px solid #FECACA;
-        color: #DC2626;
-        border-radius: 8px;
-        padding: 10px 14px;
-        font-size: 0.88rem;
-        margin-bottom: 16px;
-        text-align: center;
-    }}
+    [data-testid="stSidebar"]  { display: none !important; }
+    [data-testid="stHeader"]   { background: transparent; }
+    #MainMenu, footer          { visibility: hidden; }
     </style>
+    """, unsafe_allow_html=True)
 
-    <div class="login-wrapper">
-      <div class="login-card">
-        <div class="login-logo">
-          <div class="brand">Vir<span>Ventures</span></div>
-        </div>
-        <div class="login-subtitle">Returnability Intelligence Platform</div>
+    # ── Branded header ────────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="text-align:center;padding:48px 0 8px 0;">
+      <div style="font-size:2rem;font-weight:800;color:{NAVY};letter-spacing:-0.5px;">
+        Vir<span style="color:{ORANGE};">Ventures</span>
+      </div>
+      <div style="color:#6B7280;font-size:0.9rem;margin-top:4px;">
+        Returnability Intelligence Platform
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Centre the form using columns
-    _, col, _ = st.columns([1, 2, 1])
-    with col:
-        st.markdown(
-            f'<h3 style="text-align:center;color:{NAVY};margin-bottom:24px;">Sign In</h3>',
-            unsafe_allow_html=True,
-        )
+    # ── Login card ────────────────────────────────────────────────────────────
+    _, card, _ = st.columns([1, 1.2, 1])
+    with card:
+        st.markdown(f"""
+        <div style="background:#fff;border-radius:16px;padding:40px 44px;
+                    box-shadow:0 8px 40px rgba(27,58,92,0.13);
+                    border-top:5px solid {ORANGE};margin-top:8px;">
+          <h3 style="text-align:center;color:{NAVY};margin-bottom:24px;font-size:1.3rem;">
+            Sign In
+          </h3>
+        </div>
+        """, unsafe_allow_html=True)
 
         username_input = st.text_input(
             "Username",
             placeholder="Enter your username",
-            key="login_username",
+            key="_auth_user",
         )
         password_input = st.text_input(
             "Password",
             type="password",
             placeholder="Enter your password",
-            key="login_password",
+            key="_auth_pass",
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        login_btn = st.button(
-            "Sign In",
-            use_container_width=True,
-            type="primary",
-            key="login_btn",
-        )
+        login_btn = st.button("Sign In", use_container_width=True, type="primary")
 
         if login_btn:
             if valid_user is None:
-                st.error("Auth credentials not configured. Add [auth] section to Streamlit secrets.")
-            elif username_input == valid_user and password_input == valid_pass:
+                st.error("Auth credentials not configured in Streamlit secrets.")
+            elif username_input.strip() == valid_user and password_input == valid_pass:
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
-                st.markdown(
-                    '<div class="login-error">Incorrect username or password. Please try again.</div>',
-                    unsafe_allow_html=True,
-                )
+                st.error("Incorrect username or password.")
 
         st.markdown(
-            f'<p style="text-align:center;color:#9CA3AF;font-size:0.78rem;margin-top:24px;">'
+            f'<p style="text-align:center;color:#9CA3AF;font-size:0.75rem;margin-top:20px;">'
             f'VirVentures &copy; 2026 &nbsp;|&nbsp; Authorised access only</p>',
             unsafe_allow_html=True,
         )
 
-    st.stop()
+    return False
 
 
 def render_logout():
-    """Render a logout button in the sidebar."""
+    """Render logout button at the bottom of the sidebar."""
+    try:
+        user = st.secrets["auth"]["username"]
+    except Exception:
+        user = "User"
+
     with st.sidebar:
         st.markdown("---")
-        user = st.secrets.get("auth", {}).get("username", "User") if hasattr(st, "secrets") else "User"
         st.markdown(
-            f'<p style="font-size:0.8rem;color:#6B7280;margin-bottom:4px;">Signed in as <b>{user}</b></p>',
+            f'<p style="font-size:0.8rem;color:#6B7280;margin-bottom:4px;">'
+            f'Signed in as <b>{user}</b></p>',
             unsafe_allow_html=True,
         )
-        if st.button("Sign Out", use_container_width=True):
+        if st.button("Sign Out", use_container_width=True, key="_logout_btn"):
             st.session_state["authenticated"] = False
             st.rerun()
