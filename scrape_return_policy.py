@@ -66,6 +66,7 @@ RETURNABLE_SIGNALS = [
     "can be returned in its original condition",
     "30-day refund",
     "full refund or replacement within",
+    "free returns",
 ]
 
 NR_SIGNALS = [
